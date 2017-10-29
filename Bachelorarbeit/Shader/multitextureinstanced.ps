@@ -1,0 +1,103 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: multitextureinstanced.ps
+////////////////////////////////////////////////////////////////////////////////
+
+
+/////////////
+// GLOBALS //
+/////////////
+Texture2D shaderTextures[36];
+SamplerState SampleType;
+
+
+//////////////
+// TYPEDEFS //
+//////////////
+struct PixelInputType
+{
+    float4 position : SV_POSITION;
+    float2 tex : TEXCOORD0;
+	int texnumber : TEXNUMBER;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Pixel Shader
+////////////////////////////////////////////////////////////////////////////////
+float4 MultiTextureInstancedPixelShader(PixelInputType input) : SV_TARGET
+{
+	float4 color;
+
+	// Get the pixel color from the first texture.
+	//color = shaderTextures[1].Sample(SampleType, input.tex);
+
+	// Tree Bark
+	if (input.texnumber == 28)
+	{
+		// Get the pixel color from the nineth texture.
+		color = shaderTextures[9].Sample(SampleType, input.tex);
+	}
+	// Tree Twig
+	else if (input.texnumber == 29)
+	{
+		// Get the pixel color from the tenth texture.
+		color = shaderTextures[10].Sample(SampleType, input.tex);
+
+	    if(color.a < 0.3f)
+	    {
+		    discard;
+	    }
+	}
+		// Tree Lod2 Texture
+	else if (input.texnumber == 31)
+	{
+		// Get the pixel color from the eleventh texture.
+		color = shaderTextures[16].Sample(SampleType, input.tex);
+
+		if(color.a < 0.3f)
+	    {
+		    discard;
+	    }
+	}
+	// Tree Lod1 Texture
+	else if (input.texnumber == 32)
+	{
+		// Get the pixel color from the eleventh texture.
+		color = shaderTextures[15].Sample(SampleType, input.tex);
+
+		if(color.a < 0.3f)
+	    {
+		    discard;
+	    }
+	}
+	// StreetLampTrunk
+	else if (input.texnumber == 33)
+	{
+		// Get the pixel color from the eleventh texture.
+		color = shaderTextures[13].Sample(SampleType, input.tex);
+	}
+	// StreetLampHead
+	else if (input.texnumber == 34)
+	{
+		// Get the pixel color from the eleventh texture.
+		color = shaderTextures[14].Sample(SampleType, input.tex);
+	}
+	// Rain
+	else if (input.texnumber == 35)
+	{
+		// Get the pixel color from the eleventh texture.
+		color = shaderTextures[17].Sample(SampleType, input.tex);
+	}
+	// Snow
+	else if (input.texnumber == 36)
+	{
+		// Get the pixel color from the eleventh texture.
+		color = shaderTextures[18].Sample(SampleType, input.tex);
+	}
+	else
+	{
+		color = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+
+    return color;
+}

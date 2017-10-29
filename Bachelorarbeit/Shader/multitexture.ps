@@ -1,0 +1,450 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: multitexture.ps
+////////////////////////////////////////////////////////////////////////////////
+
+
+/////////////
+// DEFINES //
+/////////////
+#define NUM_LIGHTS 20
+
+
+/////////////
+// GLOBALS //
+/////////////
+Texture2D shaderTextures[36];
+SamplerState SampleType;
+
+cbuffer LightBuffer
+{
+    float4 ambientColor;
+    float4 diffuseColor;
+    float3 lightDirection;
+    float specularPower;
+    float4 specularColor;
+};
+
+cbuffer TranslationBuffer
+{
+    float textureTranslation;
+	float lamp_count;
+	float light_on;
+	float padding;
+};
+
+cbuffer LightPositionBuffer
+{
+    float4 lightPosition[NUM_LIGHTS];
+};
+
+
+//////////////
+// TYPEDEFS //
+//////////////
+struct PixelInputType
+{
+    float4 position : SV_POSITION;
+    float2 tex : TEXCOORD0;
+	float3 normal : NORMAL;
+	float3 viewDirection : TEXCOORD1;
+	int texnumber : TEXNUMBER;
+	float2 pos : POSITION;
+	float pos2 : POSITION2;
+	float3 world_pos : POSITION3;
+	float3 camera_pos : POSITION4;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Methods
+////////////////////////////////////////////////////////////////////////////////
+float Noise(int x, int y)
+{
+	int n = x + y * 57;
+	n = (n << 13) ^ n;;
+
+	return (1.0f - ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 1073741824.0f);
+}
+
+float SmoothNoise(float x, float y)
+{
+	float corners = (Noise(x - 1, y - 1) + Noise(x + 1, y - 1) + Noise(x - 1, y + 1) + Noise(x + 1, y + 1)) / 16;
+	float sides = (Noise(x - 1, y) + Noise(x + 1, y) + Noise(x, y - 1) + Noise(x, y + 1)) / 8;
+	float center = Noise(x, y) / 4;
+
+	return corners + sides + center;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Pixel Shader
+////////////////////////////////////////////////////////////////////////////////
+float4 MultiTexturePixelShader(PixelInputType input) : SV_TARGET
+{
+    float4 textureColor;
+    float3 lightDir;
+    float lightIntensity;
+    float4 color;
+	float3 reflection;
+    float4 specular;
+
+
+	// Get the pixel color from the first texture.
+	//textureColor = shaderTextures[1].Sample(SampleType, input.tex);
+
+	// none // empty
+	if (input.texnumber == 1)
+	{
+		// Get the pixel color from the first texture.
+		textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+	// skyscraper_wall
+	else if (input.texnumber == 2)
+	{
+		// Get the pixel color from the second texture.
+		textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+	// skyscraper_roof
+	else if (input.texnumber == 3)
+	{
+		// Get the pixel color from the third texture.
+		textureColor = shaderTextures[1].Sample(SampleType, input.tex);
+	}
+	// house_wall_red
+	else if (input.texnumber == 4)
+	{
+		// Get the pixel color from the forth texture.
+		textureColor = shaderTextures[2].Sample(SampleType, input.tex);
+	}
+	// house_wall_grey
+	else if (input.texnumber == 5)
+	{
+		// Get the pixel color from the fifth texture.
+		textureColor = shaderTextures[3].Sample(SampleType, input.tex);
+	}
+	// house_wall_green
+	else if (input.texnumber == 6)
+	{
+		// Get the pixel color from the forth texture.
+		textureColor = shaderTextures[4].Sample(SampleType, input.tex);
+	}
+	// house_wall_noise
+	else if (input.texnumber == 7)
+	{
+		// Get the pixel color from the forth texture.
+		textureColor = shaderTextures[2].Sample(SampleType, input.tex);
+	}
+	// house_roof_red
+	else if (input.texnumber == 8)
+	{
+		// Get the pixel color from the fifth texture.
+		textureColor = shaderTextures[5].Sample(SampleType, input.tex);
+	}
+	// path
+	else if (input.texnumber == 9)
+	{
+		// Get the pixel color from the seventh texture.
+		textureColor = float4(51.0f/255.0f, 0.0f, 0.0f, 1.0f);
+
+		textureColor += SmoothNoise(input.pos.x*30, input.pos.y*30);
+	}
+	// small_road
+	else if (input.texnumber == 10)
+	{
+		// Get the pixel color from the seventh texture.
+		textureColor = shaderTextures[7].Sample(SampleType, input.tex);
+	}
+	// middle_road
+	else if (input.texnumber == 11)
+	{
+		// Get the pixel color from the seventh texture.
+		textureColor = shaderTextures[7].Sample(SampleType, input.tex);
+	}
+	// large_road
+	else if (input.texnumber == 12)
+	{
+		// Get the pixel color from the seventh texture.
+		textureColor = shaderTextures[20].Sample(SampleType, input.tex);
+	}
+	// plaza
+	else if (input.texnumber == 13)
+	{
+		// textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+		// Get the pixel color from the sixth texture.
+		textureColor = shaderTextures[6].Sample(SampleType, input.tex);
+
+		textureColor += SmoothNoise(input.pos.x*30, input.pos.y*30);
+	}
+	// green_land
+	else if (input.texnumber == 14)
+	{
+		// textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+		// Get the pixel color from the sixth texture.
+		textureColor = shaderTextures[6].Sample(SampleType, input.tex);
+
+		textureColor += SmoothNoise(input.pos.x*30, input.pos.y*30);
+	}
+	// farm_land
+	else if (input.texnumber == 15)
+	{
+		// textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+		// Get the pixel color from the sixth texture.
+		textureColor = shaderTextures[6].Sample(SampleType, input.tex);
+
+		textureColor += SmoothNoise(input.pos.x*30, input.pos.y*30);
+	}
+	// bare_land
+	else if (input.texnumber == 16)
+	{
+		// textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+		// Get the pixel color from the sixth texture.
+		//textureColor = shaderTextures[6].Sample(SampleType, input.tex);
+
+		textureColor = float4(102.0f/255.0f, 51.0f/255.0f, 0.0f/255.0f, 1.0f);
+		//textureColor += SmoothNoise(input.pos.x*30, input.pos.y*30);
+	}
+	// forest
+	else if (input.texnumber == 17)
+	{
+		// textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+		// Get the pixel color from the sixth texture.
+		textureColor = shaderTextures[6].Sample(SampleType, input.tex);
+
+		textureColor += SmoothNoise(input.pos.x*30, input.pos.y*30);
+	}
+	// graveyard
+	else if (input.texnumber == 18)
+	{
+		// textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+		// Get the pixel color from the sixth texture.
+		//textureColor = shaderTextures[6].Sample(SampleType, input.tex);
+		textureColor = float4(32.0f/255.0f, 32.0f/255.0f, 32.0f/255.0f, 1.0f);
+		textureColor += SmoothNoise(input.pos.x, input.pos.y);
+	}
+	// boundary
+	else if (input.texnumber == 19)
+	{
+		// Get the pixel color from the eleventh texture.
+		textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+	// city
+	else if (input.texnumber == 20)
+	{
+		textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+	// state
+	else if (input.texnumber == 21)
+	{
+		textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+	// nation
+	else if (input.texnumber == 22)
+	{
+		textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+	// continent
+	else if (input.texnumber == 23)
+	{
+		textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+	// water
+	else if (input.texnumber == 24)
+	{
+		// textureColor = shaderTextures[23].Sample(SampleType, input.tex);
+		// Get the pixel color from the eleventh texture.
+		textureColor = shaderTextures[11].Sample(SampleType, input.tex);
+
+		//textureColor += SmoothNoise(input.position.x, input.position.y);
+		textureColor += SmoothNoise((input.pos.x+textureTranslation)*10, (input.pos.y+textureTranslation)*10);
+	}
+	// coast
+	else if (input.texnumber == 25)
+	{
+		textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+	// industry
+	else if (input.texnumber == 26)
+	{
+		textureColor = shaderTextures[12].Sample(SampleType, input.tex);
+	}
+	// residential
+	else if (input.texnumber == 27)
+	{
+		textureColor = shaderTextures[12].Sample(SampleType, input.tex);
+	}
+	// tree_lod4_bark
+	else if (input.texnumber == 28)
+	{
+		// Get the pixel color from the nineth texture.
+		textureColor = shaderTextures[9].Sample(SampleType, input.tex);
+	}
+	// tree_lod4_twig
+	else if (input.texnumber == 29)
+	{
+		// textureColor = shaderTextures[28].Sample(SampleType, input.tex);
+		// Get the pixel color from the tenth texture.
+		textureColor = shaderTextures[10].Sample(SampleType, input.tex);
+
+	    if(textureColor.a < 0.3f)
+	    {
+		    discard;
+	    }
+
+		input.normal = float3(0.0f, -1.0f, 0.0f); // TODO
+	}
+	// tree_lod3
+	else if (input.texnumber == 30)
+	{
+		textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+	// tree_lod2
+	else if (input.texnumber == 31)
+	{
+		// Get the pixel color from the eleventh texture.
+		textureColor = shaderTextures[16].Sample(SampleType, input.tex);
+
+	    if(textureColor.a < 0.3f)
+	    {
+		    discard;
+	    }
+	}
+	// tree_lod1
+	else if (input.texnumber == 32)
+	{
+		// textureColor = shaderTextures[31].Sample(SampleType, input.tex);
+		// Get the pixel color from the eleventh texture.
+		textureColor = shaderTextures[15].Sample(SampleType, input.tex);
+
+		if(textureColor.a < 0.3f)
+	    {
+		    discard;
+	    }
+	}
+	// streetlamp_trunk
+	else if (input.texnumber == 33)
+	{
+		textureColor = shaderTextures[13].Sample(SampleType, input.tex);
+	}
+	// streetlamp_head
+	else if (input.texnumber == 34)
+	{
+		textureColor = shaderTextures[14].Sample(SampleType, input.tex);
+	}
+	// Rain
+	else if (input.texnumber == 35)
+	{
+		textureColor = shaderTextures[17].Sample(SampleType, input.tex);
+	}
+	// Snow
+	else if (input.texnumber == 36)
+	{
+		textureColor = shaderTextures[18].Sample(SampleType, input.tex);
+	}
+	// HouseWindow
+	else if (input.texnumber == 37)
+	{
+		textureColor = shaderTextures[19].Sample(SampleType, input.tex);
+		textureColor.w = 0.6f;
+	}
+	// Skydome
+	else if (input.texnumber == 38)
+	{
+		float height;
+
+
+		// Determine the position on the sky dome where this pixel is located.
+		height = input.pos2;
+
+		// The value ranges from -1.0f to +1.0f so change it to only positive values.
+		if(height < 0.0)
+		{
+		    height = 0.0f;
+		}
+
+		// Determine the gradient color by interpolating between the apex and center based on the height of the pixel in the sky dome.
+		color = lerp(diffuseColor, ambientColor, height);
+
+		return color;
+		//textureColor = shaderTextures[36].Sample(SampleType, input.tex);
+	}
+	// FloorPlane
+	else if (input.texnumber == 39)
+	{
+		//textureColor = shaderTextures[37].Sample(SampleType, input.tex);
+		textureColor = float4(219.0f/255.0f, 197.0f/255.0f, 168.0f/255.0f, 1.0f);
+	}
+	else
+	{
+		textureColor = shaderTextures[0].Sample(SampleType, input.tex);
+	}
+
+
+	// Lighting
+	if (light_on != 0.0f)
+	{
+	    // Set the default output color to the ambient light value for all pixels.
+        color = ambientColor;
+
+		// Initialize the specular color.
+        specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+		// Invert the light direction for calculations.
+		lightDir = -lightDirection;
+
+		// Calculate the amount of light on this pixel.
+		lightIntensity = saturate(dot(input.normal, lightDir));
+
+		if(lightIntensity > 0.0f)
+		{
+		    // Determine the final diffuse color based on the diffuse color and the amount of light intensity.
+		    color += (diffuseColor * lightIntensity);
+
+			// Saturate the ambient and diffuse color.
+            color = saturate(color);
+
+			if (specularPower != 0)
+			{
+				// Calculate the reflection vector based on the light intensity, normal vector, and light direction.
+				reflection = normalize(2 * lightIntensity * input.normal - lightDir);
+
+				// Determine the amount of specular light based on the reflection vector, viewing direction, and specular power.
+				specular = pow(saturate(dot(reflection, input.viewDirection)), specularPower);
+			}
+			else
+				specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		}
+
+		color = saturate(color);
+
+		// Multiply the texture pixel and the final diffuse color to get the final pixel color result.
+	    color = color * textureColor;
+
+		// Add the specular component last to the output color.
+        color = saturate(color + specular);
+
+		for (int i = 0; i < lamp_count; i++)
+		{
+			// distance how far the light reaches
+			float light_distance_squared = 10.0f;
+			float3 light_dir = normalize(input.world_pos - lightPosition[i]);
+
+			// light intensity
+			float diffuse_lighting = saturate(dot(input.normal, -light_dir));
+
+			// fall-off of the light intensity
+			diffuse_lighting *= (light_distance_squared / dot(lightPosition[i] - input.world_pos, lightPosition[i] - input.world_pos));
+
+			float3 h = normalize(normalize(input.camera_pos - input.world_pos) - light_dir);
+			float spec_lighting = pow(saturate(dot(h,input.normal)), specularPower);
+
+			// no specular light at the moment
+			color += float4(saturate(textureColor.xyz * diffuse_lighting * 0.6), textureColor.w);
+		}
+	}
+	else
+	{
+		color = textureColor;
+	}
+
+    return color;
+}

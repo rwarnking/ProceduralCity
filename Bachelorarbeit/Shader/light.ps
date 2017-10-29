@@ -1,0 +1,127 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: light.ps
+////////////////////////////////////////////////////////////////////////////////
+
+
+/////////////
+// GLOBALS //
+/////////////
+Texture2D colorTexture : register(t0);
+Texture2D normalTexture : register(t1);
+Texture2D specularTexture : register(t2);
+
+
+///////////////////
+// SAMPLE STATES //
+///////////////////
+SamplerState SampleTypePoint : register(s0);
+
+
+//////////////////////
+// CONSTANT BUFFERS //
+//////////////////////
+cbuffer LightBuffer
+{
+    float3 lightDirection;
+	float specularPower;
+	//float padding;
+};
+
+
+//////////////
+// TYPEDEFS //
+//////////////
+struct PixelInputType
+{
+    float4 position : SV_POSITION;
+    float2 tex : TEXCOORD0;
+	float3 viewDirection : TEXCOORD1;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Pixel Shader
+////////////////////////////////////////////////////////////////////////////////
+float4 LightPixelShader(PixelInputType input) : SV_TARGET
+{
+	float4 colors;
+	float4 normals;
+	float4 speculars;
+	float3 lightDir;
+	float lightIntensity;
+	float4 outputColor;
+	float4 ambientColor;
+	float4 diffuseColor;
+	float3 reflection;
+	float4 specular;
+
+	int i = 0;
+
+	// Initialize the specular color. TODO übergeben
+    //specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	ambientColor = float4(0.45f, 0.45f, 0.45f, 1.0f);
+	diffuseColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
+
+	// Sample the colors from the color render texture using the point sampler at this texture coordinate location.
+	colors = colorTexture.Sample(SampleTypePoint, input.tex);
+
+	if(i == 1)
+	{
+		return colors;
+	}
+
+	// Sample the normals from the normal render texture using the point sampler at this texture coordinate location.
+	normals = normalTexture.Sample(SampleTypePoint, input.tex);
+
+	if(i == 2)
+	{
+		return normals;
+	}
+
+	// Das hier is die viewdirection
+	speculars = specularTexture.Sample(SampleTypePoint, input.tex);
+
+	if(i == 3)
+	{
+		return speculars;
+	}
+
+	// Invert the light direction for calculations.
+    lightDir = -lightDirection;
+
+    // Calculate the amount of light on this pixel.
+    lightIntensity = saturate(dot(normals.xyz, lightDir));
+
+	if (lightIntensity < 0.0f)
+		lightIntensity = 0.0f;
+
+	//outputColor = saturate(diffuseColor * lightIntensity);
+	//outputColor = colors * diffuseColor;
+
+	lightIntensity = max(lightIntensity, ambientColor);
+
+	if(lightIntensity > 0.0f && false)
+    {
+		// Determine the final amount of diffuse color based on the color of the pixel combined with the light intensity.
+		// TODO ACHTUNG HIER IST DIE AMBIENTCOLOR STATT DER DIFFUSECOLOR VERWENDET WORDEN (2te verwendung)
+		//ambientColor += ambientColor * lightIntensity;
+
+		// Calculate the reflection vector based on the light intensity, normal vector, and light direction.
+        reflection = normalize(2 * lightIntensity * normals.xyz - lightDir);
+
+		// Determine the amount of specular light based on the reflection vector, viewing direction, and specular power.
+        specular = pow(saturate(dot(reflection.xyz, speculars.xyz)), 64);
+
+		outputColor = saturate(colors * lightIntensity + max(specular,0.0f));
+	}
+	else
+	{
+			outputColor = saturate(colors);
+	}
+
+	//outputColor = max(saturate(colors * lightIntensity), saturate(colors * ambientColor));
+	//outputColor = max(saturate(colors * lightIntensity + max(specular,0.0f)), saturate(colors * ambientColor + max(specular,0.0f)));
+
+
+    return outputColor;
+}
